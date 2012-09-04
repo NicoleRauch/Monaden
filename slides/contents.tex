@@ -1,9 +1,11 @@
-\begin{frame}[fragile]{Funktionale Programmierung}
-\begin{center}
-\Huge
-Funktionale Programmierung
-\end{center}
+\begin{frame}[fragile]{Überblick}
+\begin{itemize}
+\item Grundsätzliche Funktionsweise von Monaden
+\item Beispielhafte Vorstellung mehrerer Monaden
+\item Monaden in Java?!
+\end{itemize}
 \end{frame}
+
 
 \begin{frame}[fragile]{Warum funktionale Programmierung?}
 \begin{itemize}
@@ -11,7 +13,7 @@ Funktionale Programmierung
 \item Höhere Abstraktionsmöglichkeiten
 \begin{itemize}
 \item z. B. Higher Order Functions, Closures
-\item ermöglichen knapperen, klareren Code
+\item ermöglichen knappen, klaren Code
 \end{itemize}
 
 \onslide+<3->
@@ -46,12 +48,12 @@ Funktionale Programmierung
 
 \begin{frame}[fragile]{Und was sind jetzt Monaden?}
 
-Monaden sind
+Monaden 
 \begin{itemize}
-\item eine Abstraktion
-\item vereinheitlichen scheinbar verschiedene Aspekte
-\item kapseln bestimmte immer wiederkehrende Aspekte
-\item helfen so beim Fokussieren
+\item sind ein Abstraktionskonzept
+\item vereinheitlichen unterschiedliche Aspekte
+\item kapseln immer wiederkehrende Aspekte
+\item helfen dadurch beim Fokussieren
 \item schlagen (ganz nebenbei) eine Brücke zwischen der funktionalen und der nichtfunktionalen Welt
 \end{itemize}
 
@@ -60,46 +62,105 @@ Monaden sind
 
 \begin{frame}[fragile]{Drei einfache Funktionen}
 \begin{lstlisting}
-int minus5(int x){ return x - 5; }
-	
-int mal3(int x){ return x * 3; }
-	
-int plus7(int x){ return x + 7; }
+    Integer minus5(Integer x) {
+        if (x == 7) {
+            return null;
+        }
+        return x - 5;
+    }
+
+    Integer mal3(Integer x) {
+        if (x % 2 == 0) {
+            return null;
+        }
+        return x * 3;
+    }
+
+    Integer plus7(Integer x) {
+        return x + 7;
+    }
 \end{lstlisting}
 \end{frame}
 
-\begin{frame}[fragile]{Drei etwas komplexere Funktionen}
+\begin{frame}[fragile]{Die Funktionen hintereinandergeschaltet}
 \begin{lstlisting}
-Integer minus5(Integer x){ return x - 5; }
-	
-Integer mal3(Integer x){ return x * 3; }
-	
-Integer plus7(Integer x){ return x + 7; }
+minus5 (mal3 (plus7 ( 12 )))
 \end{lstlisting}
-\end{frame}
 
-\begin{frame}[fragile]{Drei etwas robustere Funktionen}
+liefert 52
+
+\onslide+<2->
+
+\vspace{3em}
+
 \begin{lstlisting}
-Integer minus5(Integer x){
-    if( x == null ) return null;
-    return x - 5; 
-}
-	
-Integer mal3(Integer x){ 
-    if( x == null ) return null;
-    return x * 3; 
-}
-	
-Integer plus7(Integer x){ 
-    if( x == null ) return null;
-    return x + 7; 
-}
+minus5 (mal3 (plus7 ( 1 )))
+\end{lstlisting}
+
+liefert eine Exception...
+
+\onslide+<3->
+~
+
+(wir erinnern uns: \lstinline|mal3| mag nur ungerade Zahlen)
+
+\end{frame}
+
+\begin{frame}[fragile]{Also entweder besser aufpassen...}
+
+\begin{lstlisting}
+    Integer aufpassen(Integer x1) {
+        if (x1 != null) {
+            Integer x2 = plus7(x1);
+            if (x2 != null) {
+                Integer x3 = mal3(x2);
+                if (x3 != null) {
+                    return minus5(x3);
+                }
+            }
+        }
+        return null;
+    }
+\end{lstlisting}
+
+
+\end{frame}
+
+\begin{frame}[fragile]{...oder robustere Funktionen bauen?}
+\begin{lstlisting}
+    Integer minus5(Integer x) {
+        if (x == null || x == 7) {
+            return null;
+        }
+        return x - 5;
+    }
+
+    Integer mal3(Integer x) {
+        if (x == null || x % 2 == 0) {
+            return null;
+        }
+        return x * 3;
+    }
+
+    Integer plus7(Integer x) {
+        if (x == null) { return null; }
+        return x + 7;
+    }
 \end{lstlisting}
 \end{frame}
 
-\begin{frame}[fragile]{Drei Haskell-Funktionen}
+\begin{frame}[fragile]{Der Effekt}
+\begin{itemize}
+\item Die null-Prüfungen müssen überall eingefügt werden
+\item Vergessene Prüfungen führen zu Laufzeitfehlern
+\item Der Prüf-Code lenkt von der eigentlichen Fachlichkeit ab
+\end{itemize}
+\end{frame}
 
-Das Haskell-Äquivalent zu Integer:
+
+\begin{frame}[fragile]{Die drei Funktionen in Haskell}
+
+Das Haskell-Äquivalent zu nullable Types:
 
 \begin{lstlisting}
 data Maybe a = Just a
@@ -107,409 +168,519 @@ data Maybe a = Just a
 \end{lstlisting}
 
 \onslide+<2->
-~
 
 Unsere Funktionen in Haskell:
 
 \begin{lstlisting}
-minus5 Nothing  = Nothing
-minus5 (Just x) = Just (x - 5)
+minus5 Nothing = Nothing
+minus5 (Just x)
+    | x == 7    = Nothing
+    | otherwise = Just (x - 5)
 
-mal3   Nothing  = Nothing
-mal3   (Just x) = Just (3 * x)
+mal3 Nothing = Nothing
+mal3 (Just x)
+    | even x    = Nothing
+    | otherwise = Just (3 * x)
 
-plus7  Nothing  = Nothing
-plus7  (Just x) = Just (x + 7)
+plus7 Nothing = Nothing
+plus7 (Just x) = Just (x + 7)
 \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Separation of Concerns}
+
+Unsere Funktionen sollen sich nur um die Fachlichkeit kümmern:
+
+\begin{lstlisting}
+minus5 x
+    | x == 7    = Nothing
+    | otherwise = Just (x - 5)
+
+mal3 x
+    | even x    = Nothing
+    | otherwise = Just (3 * x)
+
+plus7 x = Just (x + 7)
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Auslagern der Null-Behandlung}
+
+Das Verbinden der Funktionen lagern wir aus:
+\begin{lstlisting}
+(>>=) :: Maybe a -> (a -> Maybe b) -> Maybe b
+
+Nothing  >>= f  =  Nothing
+(Just x) >>= f  =  f x
+\end{lstlisting}
+
+\onslide+<2->
+~
+
+Der initiale Einstieg in den Maybe-Typ:
+
+\begin{lstlisting}
+return :: a -> Maybe a
+
+return x  =  Just x
+\end{lstlisting}
+
+\onslide+<3->
+~
+
+Unsere Methodenaufrufe:
+
+\begin{lstlisting}
+return 12 >>= plus7 >>= mal3 >>= minus5
+\end{lstlisting}
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Wann kommen denn endlich die Monaden?}
+
+\onslide+<2->
+
+Einen Datentyp, zum Beispiel
+
+\begin{lstlisting}
+data Maybe a = Just a
+             | Nothing
+\end{lstlisting}
+
+\onslide+<3->
+~
+
+auf dem zwei Funktionen
+
+\begin{lstlisting}
+(>>=) :: Maybe a -> (a -> Maybe b) -> Maybe b
+
+return :: a -> Maybe a
+\end{lstlisting}
+
+definiert sind,
+
+\onslide+<4->
+~
+
+nennt man eine Monade! $^\ast$
+
+\end{frame}
+
+\begin{frame}[fragile]{Vorteile und Nachteile}
+Vorteile von Monaden:
+\begin{itemize}
+\item Boilerplate Code ist wegabstrahiert
+\item Höheres konzeptionelles Niveau des Codes
+\item Es gibt Funktionsbibliotheken, die auf Monaden aufbauen
+\item Verschiedene Monaden lassen sich miteinander kombinieren (Monaden-Transformer)
+\end{itemize}
+
+\onslide+<2->
+~
+
+Nachteile von Monaden:
+\begin{itemize}
+\item Größere Einstiegshürde und Lernkurve
+\item Benötigt implizites Wissen über die Funktionsweise
+\end{itemize}
+
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[fragile]{}
-\begin{center}
-\Huge
-Funktionen
-\end{center}
-\end{frame}
 
-\begin{frame}[fragile]{Ist das eine Funktion?}
+
+\begin{frame}[fragile]{Die einfachste Monade}
+
+Der Datentyp:
 \begin{lstlisting}
-public int random(){
-
-    return new Random().nextInt();
-    
-}
+a
 \end{lstlisting}
+
+Die Funktionen:
+\begin{lstlisting}
+(>>=) :: a -> (a -> b) -> b
+
+x >>= f = f x
+\end{lstlisting}
+
+
+\begin{lstlisting}
+return :: a -> a
+
+return x = x
+\end{lstlisting}
+
 \end{frame}
 
-\begin{frame}[fragile]{Oder das?}
+\begin{frame}[fragile]{Exception-Handling}
+
 \begin{lstlisting}
-public int dienstagsBinIchAnders(int input){
-
-    Date rightNow = new Date();
-
-    if(rightNow.getDay() == TUESDAY){
-        return 3 * input - 4;
-    } else {
-        return 17 - input;
+public int throwAt7(int number){
+    if( number == 7 ){
+        throw new RuntimeException("Ich hasse 7!");
     }
+    
+    return number + 1;
 }
+\end{lstlisting}
+
+~
+
+In rein funktionalen Sprachen ist dies so nicht möglich!
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Eine Monade als Alternative zu Exceptions}
+
+Der Datentyp:
+\begin{lstlisting}
+data Exceptional e s =
+     Success s
+   | Exception e
+\end{lstlisting}
+
+enthält entweder eine Exception oder die Rückgabe.
+
+\onslide+<2->
+
+Die Funktionen:
+\begin{lstlisting}
+(>>=) :: Exceptional e s -> (s -> Exceptional e s) -> Exceptional e s
+
+Exception exc >>= _   =  Exception exc
+Success x     >>= f   =  f x
+\end{lstlisting}
+
+
+\begin{lstlisting}
+return :: s -> Exceptional e s
+
+return = Success
 \end{lstlisting}
 \end{frame}
 
-\begin{frame}[fragile]{Oder das?}
+\begin{frame}[fragile]{throw und catch}
 \begin{lstlisting}
-public int giveNumberAndSaySomething(){
+throw :: e -> Exceptional e s
+
+throw  =  Exception
+\end{lstlisting}
+
+~
+
+\begin{lstlisting}
+catch :: Exceptional e s -> (e -> Exceptional e s) -> Exceptional e s
+
+catch (Exception  exc) f  =  f exc
+catch (Success x)      _  =  Success x
+\end{lstlisting}
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Anwendungsbeispiel der Exception-Monade}
+\begin{lstlisting}
+public int throwAt7(int x){
+    if( x == 7 ){
+        throw new RuntimeException("Ich hasse 7!");
+    }
+    
+    return x + 1;
+}
+\end{lstlisting}
+
+\onslide+<2->
+
+\begin{lstlisting}
+data Exceptions = RuntimeException String
+
+throwAt7 x
+   | x == 7     =  throw (RuntimeException "Ich hasse 7!")
+   | otherwise  =  Success (x + 1)
+\end{lstlisting}
+
+
+\end{frame}
+
+\begin{frame}[fragile]{Funktionsverknüpfung in der Exception-Monade}
+\begin{lstlisting}
+throwAt7 x
+   | x == 7     =  throw (RuntimeException "Ich hasse 7!")
+   | otherwise  =  Success (x + 1)
+\end{lstlisting}
+
+\begin{lstlisting}
+mal3 :: Int -> Int
+mal3 x  =  3 * x
+\end{lstlisting}
+
+\onslide+<2->
+
+Herstellen der passenden Signatur für mal3:
+
+\begin{lstlisting}
+return . mal3
+\end{lstlisting}
+
+hat die Signatur
+
+\begin{lstlisting}
+Int -> Exceptional e Int
+\end{lstlisting}
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Funktionsverknüpfung in der Exception-Monade}
+
+Mit der Hilfsfunktion
+\begin{lstlisting}
+resultOf (Exception (RuntimeException s)) = "Error: "  ++ s
+resultOf (Success r)                      = "Result: " ++ (show r)
+\end{lstlisting}
+
+\onslide+<2->
+
+erhalten wir folgende Ausgaben:
+
+\begin{lstlisting}
+putStrLn (resultOf ((throwAt7 12) >>= (return . mal3)))
+\end{lstlisting}
+liefert \lstinline|Result: 39|
+
+\onslide+<3->
+
+\begin{lstlisting}
+putStrLn (resultOf ((throwAt7 7) >>= (return . mal3)))
+\end{lstlisting}
+liefert \lstinline|Error: Ich hasse 7!|
+
+
+\end{frame}
+
+\begin{frame}[fragile]{Vorteile}
+
+\begin{itemize}
+\item Sprachunterstützung für Exceptions ist nicht erforderlich
+\item Keine versehentlichen Programmabbrüche durch Exceptions
+\item Volle Kontrolle über den Programmfluss, trotzdem kein Boilerplate-Code
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}[fragile]{System Output}
+
+\begin{lstlisting}
+public int numberAndText(){
 
     System.out.println("Hallo Herbstcampus!");
     
     return 7;
 }
 \end{lstlisting}
+
 \end{frame}
 
 
-\begin{frame}[fragile]{Oder vielleicht das?}
+\begin{frame}[fragile]{Eine Monade als Alternative zu System Output}
+
+Der Datentyp:
 \begin{lstlisting}
-public int throwSomething(int number){
-    if( number == 7 ){
-        throw new RuntimeException();
-    }
-    
-    return number + 1;
-}
+data Sysout a = ResOut a String
 \end{lstlisting}
-\end{frame}
 
+soll sämtliche Systemausgaben aufsammeln.
 
-\begin{frame}[fragile]{Was die Mathematiker darüber denken...}
 \onslide+<2->
-\begin{minipage}[t]{3.5cm}
-\begin{tabular}{|c|c|}
-\textbf{x} & \textbf{f( x )}  \\ \hline
-1 & 3  \\
-3 & 3  \\
-7 & 2  \\
-12 & 4
-\end{tabular} 
-\end{minipage} 
-\hfill
-\onslide+<3->
-\begin{minipage}[t]{5.5cm}
-\includegraphics[height=4.5cm]{1Funktion.jpg}
-\end{minipage}
-~ \\
-\onslide+<4->
-\begin{eqnarray*}
-f(x) &=& \left\{ 
-\begin{array}{lll}
-3 & & x < 5 \\
-2 & wenn & 5 \leq x < 10 \\
-4 & & 10 \leq x
-\end{array} \right.
-\end{eqnarray*}
+~
 
-\end{frame}
-
-%//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-\begin{frame}[fragile]{Funktionen}
-\begin{center}
-\Large
-Schauen wir nochmal genauer hin...
-\end{center}
-\end{frame}
-
-
-\begin{frame}[fragile]{Zufall...}
+Die Funktionen:
 \begin{lstlisting}
-public int random(){
+(>>=) :: Sysout a -> (a -> Sysout b) -> Sysout b
 
-    <R>
-
-}
+(ResOut res1 out1) >>= f = let (ResOut res2 out2) = f res1
+                           in  (ResOut res2 (out1 ++ out2))
 \end{lstlisting}
-\end{frame}
 
-\begin{frame}[fragile]{Abhängigkeit von globalen Daten...}
+
 \begin{lstlisting}
-public int dienstagsBinIchAnders(int input){
+return :: a -> Sysout a
 
-    <D>
-
-    if(rightNow.getDay() == TUESDAY){
-        return 3 * input - 4;
-    } else {
-        return 17 - input;
-    }
-}
+return x = ResOut x ""
 \end{lstlisting}
+
+
 \end{frame}
 
-\begin{frame}[fragile]{Textausgaben auf die Konsole...}
+
+
+\begin{frame}[fragile]{Anwendungsbeispiel}
 \begin{lstlisting}
-public int giveNumberAndSaySomething(){
+public int numberAndText(){
 
-    <P>"Hallo Herbstcampus!"<)>
-    
-    return 7;
-}
-\end{lstlisting}
-\end{frame}
-
-
-\begin{frame}[fragile]{Exceptions...}
-\begin{lstlisting}
-public int throwSomething(int number){
-    if( number == 7 ){
-        <T>
-    }
-    
-    return number + 1;
-}
-\end{lstlisting}
-\end{frame}
-
-%//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-\begin{frame}[fragile]{Kann man da denn nix machen?}
-\onslide+<2->
-Doch!
-
-\vspace{1cm}
-
-\onslide+<3->
-Mal angenommen, man könnte die gezeigten Beispiele so verändern, dass sie echte Funktionen würden, bei gleichem Verhalten...
-
-\end{frame}
-
-
-\begin{frame}[fragile]{Seiteneffekt: String-Ausgabe}
-\begin{lstlisting}
-public int giveNumberAndSaySomething(){
     System.out.println("Hallo Herbstcampus!");
+    
     return 7;
 }
 \end{lstlisting}
-\end{frame}
 
-\begin{frame}[fragile]{Zusammenfassen von Resultat und Seiteneffekt}
 \begin{lstlisting}
-public class ResultAndOutput {
-
-    public int result;
-    public String output;
-	
-    public ResultAndOutput(int result, String output) {
-        this.result = result;
-        this.output = output;
-    }
-}
+numberAndText =	ResOut 7 "Hallo Herbstcampus!"
 \end{lstlisting}
-\end{frame}
 
-\begin{frame}[fragile]{Funktion ohne Seiteneffekt}
-\begin{lstlisting}
-ResultAndOutput giveNumberAndSaySomething_Pure(){
-    return new ResultAndOutput(7, "Hallo Herbstcampus!");
-}
-\end{lstlisting}
-\end{frame}
+\onslide+<2->
 
-\begin{frame}[fragile]{Noch eine Funktion}
 \begin{lstlisting}
-int addAndSaySomething(int input){
+public int calcAndText(int x){
+
     System.out.println("Ich kann rechnen!");
-    return 3 * input;
-}
-\end{lstlisting}
-\onslide+<2->
-Konkatenation:
-\begin{lstlisting}
-addAndSaySomething( giveNumberAndSaySomething() );
-\end{lstlisting}	
-
-\onslide+<3->
-Das geht nicht mehr:
-\begin{lstlisting}
-addAndSaySomething( giveNumberAndSaySomething_Pure() );
-\end{lstlisting}	
-\end{frame}
-
-
-\begin{frame}[fragile]{Naiver Lösungsansatz}
-\begin{lstlisting}
-ResultAndOutput addAndSaySomething_Naiv(ResultAndOutput input){
-    return new ResultAndOutput(3 * input.result, 
-                input.output + "\n" + "Ich kann rechnen!");
+    
+    return 4 + x;
 }
 \end{lstlisting}
 
-\onslide+<2->
-Funktioniert wieder:
 \begin{lstlisting}
-addAndSaySomething_Naiv( giveNumberAndSaySomething_Pure() );
+calcAndText x =	ResOut (4 + x) "Ich kann rechnen!"
 \end{lstlisting}
 
-\onslide+<3->
-Immenser Overhead!
 \end{frame}
 
 
-\begin{frame}[fragile]{Verallgemeinerter Lösungsansatz}
+\begin{frame}[fragile]{Funktionsverknüpfung}
+Hilfsfunktionen zum Extrahieren von Ergebnis und Konsolenausgabe:
 \begin{lstlisting}
-ResultAndOutput addAndSaySomething_Pure(int input){
-    return new ResultAndOutput(3 * input, "Ich kann rechnen!");
-}
+resultOf (ResOut res out) = res
+outputOf (ResOut res out) = out
 \end{lstlisting}
 
 \onslide+<2->
-Funktioniert wieder nicht:
+~
+
 \begin{lstlisting}
-addAndSaySomething_Pure( giveNumberAndSaySomething_Pure() );
+putStrLn (resultOf (numberAndText >>= calcAndText))
 \end{lstlisting}
+liefert \lstinline|11|
+
+\begin{lstlisting}
+putStrLn (outputOf (numberAndText >>= calcAndText))
+\end{lstlisting}
+liefert \lstinline|Hallo Herbstcampus! Ich kann rechnen!|
+
 \end{frame}
 
 
-\begin{frame}[fragile]{Konkatenierungsfunktion}
+\begin{frame}[fragile]{Vorteile}
+
+\begin{itemize}
+\item System Output bleibt stets in der richtigen Reihenfolge, auch bei Parallelisierung
+\item Die tatsächliche Textausgabe ist nicht mehr über den ganzen Code verteilt, sondern zentral gebündelt
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{frame}[fragile]{Grundsätzliches}
+
+\begin{itemize}
+
+\item Es gibt keine Seiteneffekte $\Rightarrow$ Funktionen problemlos testbar
+
+\item Man kann sofort erkennen, ob eine Funktion eine bestimmte Monade einsetzt (z. B. einen bestimmten Seiteneffekt hat)
+
+\item Manche Monaden garantieren, dass alle Ausdrücke nacheinander ausgeführt werden, keine Vertauschung der Ausführungsreihenfolge durch lazy evaluation
+
+\end{itemize}
+
+%früher: explizite Fehlerbehandlung (return 0 bzw. <> 0, jeweils explizite Prüfung und Propagation)
+%heute: es gibt ein implizites Modell, nämlich Exceptions
+%Zukunft: Wir wollen viele solche Modelle nebeneinander haben können
+%wir wollen die Modelle auch mischen können
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Monaden in Java}
+
+Die Maybe-Monade:
+
 \begin{lstlisting}
-ResultAndOutput addAndSaySomething_Pure(int input){
-    return new ResultAndOutput(3 * input, "Ich kann rechnen!");
-}
+Nothing  >>= f  =  Nothing
+(Just x) >>= f  =  f x
+
+return x  =  Just x
 \end{lstlisting}
 
 \onslide+<2->
-Funktioniert wieder nicht:
-\begin{lstlisting}
-addAndSaySomething_Pure( giveNumberAndSaySomething_Pure() );
-\end{lstlisting}
-\end{frame}
 
+wird für den Maybe-Typ \lstinline|Integer| zu
 
-\begin{frame}[fragile]{Verbinden der Methoden}
-In Scala:
-\begin{lstlisting}
-ResultAndOutput bind(f: int => ResultAndOutput, arg: ResultAndOutput) = {
-    val res = f(arg.result)
-    return new ResultAndOutput(res.result, arg.output + "\n" + res.output)
-  }
-\end{lstlisting}
-\onslide+<2->
-Geht in Java leider nicht!
-
-
-\onslide+<3->
-Dementsprechend in Java auch nicht:
-\begin{lstlisting}
-bind(addAndSaySomething_Pure , giveNumberAndSaySomething_Pure())
-\end{lstlisting}
-\end{frame}
-
-\begin{frame}[fragile]{Verbinden der Methoden in Java}
-Die zu übergebende Funktion:
 \begin{lstlisting}
 interface Func {
-	ResultAndOutput eval(int arg);
+    Integer eval(int arg);
 }
 \end{lstlisting}
 
-\onslide+<2->
-Die bind-Funktion:
 \begin{lstlisting}
-ResultAndOutput bind(Func f, ResultAndOutput arg) {
-    ResultAndOutput res = f.eval(arg.result);
-    return new ResultAndOutput(res.result, arg.output + "\n" + res.output);
+Integer bind(Integer arg, Func f) {
+    if( arg == null ) return null;
+    return f.eval(arg.intValue());
 }
+
+Integer _return( int arg ){   return Integer.valueOf(arg);   }
 \end{lstlisting}
+\end{frame}
 
 
-\onslide+<3->
-Jetzt funktioniert es auch in Java:
+\begin{frame}[fragile]{Monadische Funktionsverknüpfung in Java}
+Aus
 \begin{lstlisting}
-bind(new Func() {
-        @Override
-        public ResultAndOutput eval(int arg) {
-            return addAndSaySomething_Pure(arg);
-        }
-    }, 
-    giveNumberAndSaySomething_Pure());
+return 12 >>= plus7 >>= mal3 >>= minus5
+\end{lstlisting}
+
+wird
+\end{frame}
+
+\begin{frame}[fragile]{Monadische Funktionsverknüpfung in Java}
+\begin{lstlisting}
+		bind(bind(bind(_return(12), new Func() {
+
+			@Override
+			public Integer eval(int arg) {
+				return plus7(arg);
+			}
+		}), new Func() {
+
+			@Override
+			public Integer eval(int arg) {
+				return mal3(arg);
+			}
+		}), new Func() {
+
+			@Override
+			public Integer eval(int arg) {
+				return minus5(arg);
+			}
+		});
 \end{lstlisting}
 \end{frame}
 
-\begin{frame}[fragile]{Alternativen}
-In Java auch mit Reflection möglich
-\end{frame}
 
 %------
 
-ABER!
-
-Wir wollen sicherstellen, dass die Effekte in der richtigen Reihenfolge ablaufen
-- dass sie die richtigen Einflüsse z. B. auf die Ablaufsteuerung haben
-- dass alle Effekte erzeugt werden
-- dass die Effekte in der Schnittstelle der Funktion sichtbar sind
-- dass  dieses Paket an Funktionen von anderen Funktionen entkoppelt ist (parallelisierbar, Ausführungsreihenfolge beliebig)
-
-
-Außerdem:
-
-- die Behandlung der Effekte soll ausgelagert sein
-
-
-
-früher: explizite Fehlerbehandlung (return 0 bzw. <> 0, jeweils explizite Prüfung und Propagation)
-heute: es gibt ein implizites Modell, nämlich Exceptions
-Zukunft: Wir wollen viele solche Modelle nebeneinander haben können
-wir wollen die Modelle auch mischen können
-
-
-%\begin{frame}[fragile]{Gibt es denn gar keine Gemeinsamkeiten?}
-%\onslide+<2->
-%Doch!
-%
-%\begin{itemize}
-%\onslide+<3->
-%\item Definitionsmenge bzw. die Elemente der Typen der Argumente
-%\item Zielmenge bzw. die Elemente des Rückgabetyps
-%\onslide+<4->
-%\item Konkatenation: $(f \o g)(x) = f(g(x))$ bzw. \textrm{weekdayResult(random())}
-%\end{itemize}
-%\end{frame}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\begin{frame}[fragile]{title}
-%contents
-%%\begin{lstlisting}
-%%\end{lstlisting}
-%
-%%\begin{minipage}{.8 \paperwidth}
-%%\includegraphics[width=\textwidth]{OldStateHouse.png} \newline
-%%{\tiny \url{http://www.flickr.com/photos/bostonlandmarkscommission/} \hfill \url{http://www.flickr.com/photos/josepha/}}
-%%\end{minipage}
-%\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\begin{frame}[fragile]{title}
-%contents
-%%\begin{itemize}
-%%\item 
-%%\begin{itemize}
-%%\item 
-%%\end{itemize}
-%%\end{itemize}
-%
-%\end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 {
-\usebackgroundtemplate{\includegraphics[width=\paperwidth,height=\paperheight]{background-slide.png}}
+%\usebackgroundtemplate{\includegraphics[width=\paperwidth,height=\paperheight]{background-slide.png}}
 \begin{frame}{Vielen Dank!}
 
         Code \& Folien auf GitHub:
