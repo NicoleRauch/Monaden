@@ -321,7 +321,7 @@ return x = x
 \begin{lstlisting}
 public int throwAt7(int number){
     if( number == 7 ){
-        throw new RuntimeException("Ich hasse 7!");
+        throw new IllegalArgumentException("Ich hasse 7!");
     }
     
     return number + 1;
