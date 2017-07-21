@@ -387,7 +387,7 @@ catch (Success x)      _  =  Success x
 \begin{lstlisting}
 public int throwAt7(int x){
     if( x == 7 ){
-        throw new RuntimeException("Ich hasse 7!");
+        throw new IllegalArgumentException("Ich hasse 7!");
     }
     
     return x + 1;
@@ -397,10 +397,10 @@ public int throwAt7(int x){
 \onslide+<2->
 
 \begin{lstlisting}
-data Exceptions = RuntimeException String
+data Exceptions = IllegalArgumentException String
 
 throwAt7 x
-   | x == 7     =  throw (RuntimeException "Ich hasse 7!")
+   | x == 7     =  throw (IllegalArgumentException "Ich hasse 7!")
    | otherwise  =  Success (x + 1)
 \end{lstlisting}
 
@@ -410,7 +410,7 @@ throwAt7 x
 \begin{frame}[fragile]{Funktionsverknüpfung in der Exception-Monade}
 \begin{lstlisting}
 throwAt7 x
-   | x == 7     =  throw (RuntimeException "Ich hasse 7!")
+   | x == 7     =  throw (IllegalArgumentException "Ich hasse 7!")
    | otherwise  =  Success (x + 1)
 \end{lstlisting}
 
@@ -440,7 +440,7 @@ Int -> Exceptional e Int
 
 Mit der Hilfsfunktion
 \begin{lstlisting}
-resultOf (Exception (RuntimeException s)) = "Error: "  ++ s
+resultOf (Exception (IllegalArgumentException s)) = "Error: "  ++ s
 resultOf (Success r)                      = "Result: " ++ (show r)
 \end{lstlisting}
 
