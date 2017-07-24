@@ -338,11 +338,7 @@ In rein funktionalen Sprachen ist dies so nicht möglich!
 \begin{frame}[fragile]{Eine Monade als Alternative zu Exceptions}
 
 Der Datentyp:
-\begin{lstlisting}
-data Exceptional e s =
-     Success s
-   | Exception e
-\end{lstlisting}
+\lstinputlisting[linerange={4-7}]{../haskell/Exception.hs}
 
 enthält entweder eine Exception oder die Rückgabe.
 
@@ -438,27 +434,14 @@ Int -> Exceptional e Int
 
 \begin{frame}[fragile]{Funktionsverknüpfung in der Exception-Monade}
 
-Mit der Hilfsfunktion
-\begin{lstlisting}
-resultOf (Exception (IllegalArgumentException s)) = "Error: "  ++ s
-resultOf (Success r)                      = "Result: " ++ (show r)
-\end{lstlisting}
-
-\onslide+<2->
-
-erhalten wir folgende Ausgaben:
-
-\begin{lstlisting}
-putStrLn (resultOf ((throwAt7 12) >>= (return . mal3)))
-\end{lstlisting}
-liefert \lstinline|Result: 39|
+\lstinputlisting[linerange={43-43}]{../haskell/Exception.hs}
+liefert \lstinline|Success 39|
 
 \onslide+<3->
 
-\begin{lstlisting}
-putStrLn (resultOf ((throwAt7 7) >>= (return . mal3)))
-\end{lstlisting}
-liefert \lstinline|Error: Ich hasse 7!|
+\lstinputlisting[linerange={42-42}]{../haskell/Exception.hs}
+liefert \lstinline|Exception (IllegalArgumentException "Ich hasse 7!")|
+
 
 
 \end{frame}
@@ -493,6 +476,7 @@ public int numberAndText(){
 Der Datentyp:
 \begin{lstlisting}
 data Sysout a = ResOut a String
+        deriving (Show)
 \end{lstlisting}
 
 soll sämtliche Systemausgaben aufsammeln.
@@ -553,24 +537,11 @@ calcAndText x =	ResOut (4 + x) "Ich kann rechnen!"
 
 
 \begin{frame}[fragile]{Funktionsverknüpfung}
-Hilfsfunktionen zum Extrahieren von Ergebnis und Konsolenausgabe:
-\begin{lstlisting}
-resultOf (ResOut res out) = res
-outputOf (ResOut res out) = out
-\end{lstlisting}
-
-\onslide+<2->
-~
 
 \begin{lstlisting}
-putStrLn (resultOf (numberAndText >>= calcAndText))
+print (numberAndText >>= calcAndText)
 \end{lstlisting}
-liefert \lstinline|11|
-
-\begin{lstlisting}
-putStrLn (outputOf (numberAndText >>= calcAndText))
-\end{lstlisting}
-liefert \lstinline|Hallo Herbstcampus! Ich kann rechnen!|
+liefert \lstinline|ResOut 11 "Hallo Herbstcampus! Ich kann rechnen!"|
 
 \end{frame}
 
